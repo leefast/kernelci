@@ -1,0 +1,47 @@
+version: '3.4'
+services:
+  proxy:
+    image: lucj/kernelci-proxy:${TAG:-latest}
+    ports:
+      - FE_PORT:8080
+      - BE_PORT:8081
+      - SR_PORT:8082
+    volumes:
+      - storage:/usr/share/nginx/html/kernelci/logs
+    deploy:
+      restart_policy:
+        condition: on-failure
+  frontend:
+    image: lucj/kernelci-frontend:${TAG:-latest}
+    deploy:
+      restart_policy:
+        condition: on-failure
+  backend:
+    image: lucj/kernelci-backend:${TAG:-latest}
+    volumes:
+      - storage:/var/www/images/kernel-ci
+    deploy:
+      restart_policy:
+        condition: on-failure
+  celery:
+    image: lucj/kernelci-celery:${TAG:-latest}
+    volumes:
+      - storage:/var/www/images/kernel-ci
+    deploy:
+      restart_policy:
+        condition: on-failure
+  redis:
+    image: redis:3.2
+    deploy:
+      restart_policy:
+        condition: on-failure
+  mongo:
+    image: mongo:3.4
+    volumes:
+      - database:/data/db
+    deploy:
+      restart_policy:
+        condition: on-failure
+volumes:
+  database:
+  storage:

@@ -3,11 +3,11 @@ services:
   proxy:
     image: lucj/kernelci-proxy:${TAG:-latest}
     ports:
-      - 8080:8080
-      - 8081:8081
-      - 8082:8082
+      - 8083:8080
+      - 8084:8081
+      - 8085:8082
     volumes:
-      - kci:/usr/share/nginx/html/kernelci/logs
+      - storage:/usr/share/nginx/html/kernelci/logs
     deploy:
       restart_policy:
         condition: on-failure
@@ -19,14 +19,14 @@ services:
   backend:
     image: lucj/kernelci-backend:${TAG:-latest}
     volumes:
-      - kci:/var/www/images/kernel-ci
+      - storage:/var/www/images/kernel-ci
     deploy:
       restart_policy:
         condition: on-failure
   celery:
     image: lucj/kernelci-celery:${TAG:-latest}
     volumes:
-      - kci:/var/www/images/kernel-ci
+      - storage:/var/www/images/kernel-ci
     deploy:
       restart_policy:
         condition: on-failure
@@ -38,10 +38,10 @@ services:
   mongo:
     image: mongo:3.4
     volumes:
-      - data:/data/db
+      - database:/data/db
     deploy:
       restart_policy:
         condition: on-failure
 volumes:
-  data:
-  kci:
+  database:
+  storage:

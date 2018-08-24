@@ -2,6 +2,10 @@
 
 TIMEOUTMAX=120
 
+FE_PORT=$(grep -A3 "ports" docker-compose.yml | grep -oP '(?<=- ).*(?=:)' | sed -n '1p')
+BE_PORT=$(grep -A3 "ports" docker-compose.yml | grep -oP '(?<=- ).*(?=:)' | sed -n '2p')
+SR_PORT=$(grep -A3 "ports" docker-compose.yml | grep -oP '(?<=- ).*(?=:)' | sed -n '3p')
+
 # Get host's IP (127.0.0.1 is assumed if $DOCKET_HOST is empty)
 IP=$(echo $DOCKER_HOST | cut -d'/' -f3 | cut -d':' -f1)
 if [ "$IP" = "" ]; then
@@ -27,7 +31,7 @@ docker-compose up -d || exit $?
 
 echo "-> waiting for backend..."
 TIMEOUT=0
-while [ $(curl -s -m 3 -o /dev/null -w "%{http_code}" $IP:8081) -ne 200 ]; do
+while [ $(curl -s -m 3 -o /dev/null -w "%{http_code}" $IP:$BE_PORT) -ne 200 ]; do
    sleep 1
    TIMEOUT=$(($TIMEOUT+1))
    if [ $TIMEOUT -ge $TIMEOUTMAX ];then
@@ -37,7 +41,7 @@ while [ $(curl -s -m 3 -o /dev/null -w "%{http_code}" $IP:8081) -ne 200 ]; do
 done
 echo "-> waiting for frontend..."
 TIMEOUT=0
-while [ $(curl -s -m 3 -o /dev/null -w "%{http_code}" $IP:8080) -ne 200 ]; do
+while [ $(curl -s -m 3 -o /dev/null -w "%{http_code}" $IP:$FE_PORT) -ne 200 ]; do
   sleep 1
    TIMEOUT=$(($TIMEOUT+1))
    if [ $TIMEOUT -ge $TIMEOUTMAX ];then
@@ -56,7 +60,7 @@ echo "-> requesting token from backend..."
 TOKEN=""
 TIMEOUT=0
 while [ "$TOKEN" = "" ];do
-  TOKEN=$(curl -m 3 -s -X POST -H "Content-Type: application/json" -H "Authorization: MASTER_KEY" -d '{"email": "adm@kernelci.org", "admin": 1}' $IP:8081/token | docker container run --rm -i lucj/jq -r .result[0].token 2>/dev/null)
+  TOKEN=$(curl -m 3 -s -X POST -H "Content-Type: application/json" -H "Authorization: MASTER_KEY" -d '{"email": "adm@kernelci.org", "admin": 1}' $IP:$BE_PORT/token | docker container run --rm -i lucj/jq -r .result[0].token 2>/dev/null)
   sleep 1
    TIMEOUT=$(($TIMEOUT+1))
    if [ $TIMEOUT -ge 60 ];then
@@ -69,13 +73,13 @@ echo "-> token returned: $TOKEN"
 
 ### Update frontend with token created
 
-sed -i "" -e "s/^BACKEND_TOKEN.*$/BACKEND_TOKEN = \"$TOKEN\"/" frontend/flask_settings
+sed -i "s/BACKEND_TOKEN.*$/BACKEND_TOKEN = \"$TOKEN\"/" frontend/flask_settings
 
 echo "-> wait while frontend is restarted"
 docker-compose stop frontend || exit $?
 docker-compose start frontend || exit $?
 
 echo "-> application configured"
-echo "--> frontend available on port 8080"
-echo "--> backend  available on port 8081"
-echo "--> storage  available on port 8082"
+echo "--> frontend available on port $FE_PORT"
+echo "--> backend  available on port $BE_PORT"
+echo "--> storage  available on port $SR_PORT"

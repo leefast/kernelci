@@ -1,0 +1,8 @@
+# Add the trailing slash for URLs !
+BACKEND_URL = "http://proxy:8081/"
+BACKEND_TOKEN = "d32de21b-d631-4761-bd8f-0ececd7b4201"
+FILE_SERVER_URL = "http://:"
+SECRET_KEY = "random_string"
+DATE_RANGE = 14
+CACHE_TYPE = 'null'
+CACHE_REDIS_HOST = 'redis'
